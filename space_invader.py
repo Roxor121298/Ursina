@@ -1,31 +1,33 @@
 from ursina import *
+import math
 
 app = Ursina()
 
 bullets = []  # List to track bullets
+bullet_speed = 2  # Speed of the bullets
 
-window.size = Vec2(8000, 8000)  # 800x800 pixels
+window.size = Vec2(800, 800)  # 800x800 pixels
 window.fullscreen = False  # Optional: Disable fullscreen to test the square window
 window.borderless = False  # Optional: Allow resizing (remove if not needed)
 
 # Configure the camera
 camera.orthographic = True
-camera.fov = 1000  # Vertical size visible
+camera.fov = 50  # Vertical size visible
 camera.position = (0, 0, -20)  # Camera position
-print('FOV of the camera:', camera.fov)
 
 # Calculate screen boundaries manually
 scaling_factor = 0.5  # Adjust this if necessary
 min_x, max_x = -camera.fov * scaling_factor, camera.fov * scaling_factor
 min_y, max_y = -camera.fov * scaling_factor, camera.fov * scaling_factor
 
-print(f"Horizontal limits: {min_x}, {max_x}")
-print(f"Vertical limits: {min_y}, {max_y}")
-print(f"Window size (normalized): {window.size}")
+# Create the main character
+texture = load_texture('../image/greenbaron.png')  # Replace with your texture path
+greenBaron = Entity(model='quad', texture=texture, scale=(1, 1), position=(0, 0))
 
 
 def update():
     move()
+    point(greenBaron)
 
     # Fire bullets when the space key is pressed
     if held_keys['space']:
@@ -33,28 +35,47 @@ def update():
 
     # Update bullets
     for bullet in bullets[:]:
-        bullet.y += 0.2
-        if bullet.y > max_y:  # Remove bullet if it leaves the screen
+        # Move the bullet in its stored direction
+        bullet.x += bullet.direction[0] * bullet_speed
+        bullet.y += bullet.direction[1] * bullet_speed
+
+        # Remove bullet if it leaves the screen
+        if bullet.x < (min_x*1.7) or bullet.x > (max_x*1.7) or bullet.y < min_y or bullet.y > max_y:
             bullets.remove(bullet)
             destroy(bullet)
 
+
 def move():
-    # Constrain the cube's movement to within the screen boundaries
+    # Constrain the greenBaron movement to within the screen boundaries
     if held_keys['a']:
-        cube.x = max(min_x, cube.x - 0.05)  # Left limit
+        greenBaron.x = max(-(max_x * 1.5), greenBaron.x - 0.5)  # Left limit
     if held_keys['d']:
-        cube.x = min(max_x, cube.x + 0.05)  # Right limit
+        greenBaron.x = min(max_x * 1.5, greenBaron.x + 0.5)  # Right limit
     if held_keys['w']:
-        cube.y = min(max_y, cube.y + 0.05)  # Top limit
+        greenBaron.y = min(max_y, greenBaron.y + 0.5)  # Top limit
     if held_keys['s']:
-        cube.y = max(min_y, cube.y - 0.05)  # Bottom limit
+        greenBaron.y = max(min_y, greenBaron.y - 0.5)  # Bottom limit
+
+
+def point(target):
+    mouse_pos = mouse.position
+    dx = mouse_pos.x
+    dy = mouse_pos.y
+    angle = math.degrees(math.atan2(dy, dx))  # Calculate angle in degrees
+    target.rotation_z = -(angle) + 90
+
 
 def shoot():
-    # Create a new bullet at the cube's position
-    bullet = Entity(model='cube', color=color.red, scale=(0.1, 0.1, 0.1), position=(cube.x, cube.y, 0))
+    mouse_pos = mouse.position
+    # Calculate the direction vector
+    dx = mouse_pos.x
+    dy = mouse_pos.y
+    direction = (dx , dy)
+
+    # Create a new bullet at the greenBaron's position
+    bullet = Entity(model='sphere', color=color.red, scale=0.2, position=(greenBaron.x, greenBaron.y, 0))
+    bullet.direction = direction  # Store the direction vector in the bullet
     bullets.append(bullet)
 
-# Create the main player cube
-cube = Entity(model='cube', color=color.orange, scale=(1, 1, 1), position=(0, 0, 0))
 
 app.run()
